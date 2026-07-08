@@ -353,9 +353,21 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 (function () {
-  const STORAGE_KEY = 'dan-farewell-messages';
+  // Replace with your Firebase project config (Firebase Console → Project settings → Your apps → Web app)
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyAYhW45qFTpFHcn-LcSsmFtz1Vtk4nWocY",
+    authDomain: "wall-of-love-f9f28.firebaseapp.com",
+    projectId: "wall-of-love-f9f28",
+    storageBucket: "wall-of-love-f9f28.firebasestorage.app",
+    messagingSenderId: "452769662969",
+    appId: "1:452769662969:web:2f58eeda2a11fc614bdf28"
+  };
+
+  const MESSAGES_COLLECTION = 'messages';
   const nameInput = document.getElementById('name-input');
   const msgInput = document.getElementById('msg-input');
   const charCount = document.getElementById('char-count');
@@ -368,19 +380,23 @@
 
   const TILTS = [-2.4, -1.2, 0.8, 1.6, -0.6, 2.1, -1.8, 1.1];
   let messages = [];
+  let db = null;
 
-  // Artifact environments expose window.storage; fall back to localStorage in a browser.
-  const storage = window.storage || {
-    async get(key) {
-      const value = localStorage.getItem(key);
-      if (value === null) throw new Error('Key not found');
-      return { key, value, shared: false };
-    },
-    async set(key, value) {
-      localStorage.setItem(key, value);
-      return { key, value, shared: false };
+  function isFirebaseConfigured() {
+    return FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY';
+  }
+
+  function initFirebase() {
+    if (!isFirebaseConfigured()) {
+      wallCount.textContent = 'Firebase not configured';
+      showToast('Add your Firebase config to index.html first.');
+      submitBtn.disabled = true;
+      return false;
     }
-  };
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    return true;
+  }
 
   function showToast(text) {
     toast.textContent = text;
@@ -425,37 +441,33 @@
       .join('');
   }
 
-  function safeParse(raw) {
-    if (!raw) return [];
-    try {
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      console.warn('Corrupt farewell-board data, resetting wall:', e);
-      return [];
-    }
+  function subscribeToMessages() {
+    db.collection(MESSAGES_COLLECTION)
+      .orderBy('timestamp', 'asc')
+      .onSnapshot(
+        (snapshot) => {
+          messages = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            name: doc.data().name,
+            message: doc.data().message,
+            timestamp: doc.data().timestamp
+          }));
+          render();
+        },
+        (error) => {
+          console.error('Firestore listener failed:', error);
+          wallCount.textContent = 'Could not load wall';
+          showToast('Could not load messages. Check Firebase setup.');
+        }
+      );
   }
 
-  async function fetchStoredMessages() {
-    try {
-      const result = await storage.get(STORAGE_KEY, true);
-      return result && result.value ? safeParse(result.value) : [];
-    } catch (e) {
-      // key doesn't exist yet, or a transient read error
-      return [];
-    }
-  }
-
-  async function loadMessages() {
-    messages = await fetchStoredMessages();
-    render();
-  }
-
-  async function saveMessages() {
-    const result = await storage.set(STORAGE_KEY, JSON.stringify(messages), true);
-    if (!result) {
-      throw new Error('Storage write returned no result');
-    }
+  async function pinMessage(name, message) {
+    await db.collection(MESSAGES_COLLECTION).add({
+      name,
+      message,
+      timestamp: new Date().toISOString()
+    });
   }
 
   msgInput.addEventListener('input', () => {
@@ -472,15 +484,7 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Pinning...';
     try {
-      // re-fetch latest before appending to reduce overwrite risk
-      messages = await fetchStoredMessages();
-      messages.push({
-        name,
-        message,
-        timestamp: new Date().toISOString()
-      });
-      await saveMessages();
-      render();
+      await pinMessage(name, message);
       nameInput.value = '';
       msgInput.value = '';
       charCount.textContent = '0 / 500';
@@ -645,6 +649,8 @@
 
   downloadBtn.addEventListener('click', downloadCompiledCard);
 
-  loadMessages();
+  if (initFirebase()) {
+    subscribeToMessages();
+  }
 })();
 </script>
