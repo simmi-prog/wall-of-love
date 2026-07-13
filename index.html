@@ -1,3 +1,5 @@
+<title>Wall of Love</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 
@@ -183,9 +185,8 @@
   }
 
   .wall {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 22px;
+    column-width: 280px;
+    column-gap: 22px;
     margin-bottom: 40px;
   }
 
@@ -198,6 +199,11 @@
     box-shadow: 0 10px 24px rgba(0,0,0,0.28);
     transform: rotate(var(--tilt, 0deg));
     transition: transform 0.2s ease;
+    height: auto;
+    width: 100%;
+    display: inline-block;
+    break-inside: avoid;
+    margin-bottom: 22px;
   }
   .note-card:hover { transform: rotate(0deg) translateY(-3px); }
   .note-card::before {
@@ -216,6 +222,7 @@
     margin: 6px 0 14px;
     white-space: pre-wrap;
     word-break: break-word;
+    min-height: 0;
   }
   .note-name {
     font-family: 'Fraunces', serif;
@@ -562,18 +569,18 @@
     color: #888;
   }
   .grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+    column-width: 360px;
+    column-gap: 20px;
   }
   .message-card {
     border: 1.5px solid #c9a84c;
     border-radius: 6px;
     padding: 22px 20px 18px;
     background: #fff;
-    display: flex;
-    flex-direction: column;
-    min-height: 180px;
+    display: inline-block;
+    width: 100%;
+    break-inside: avoid;
+    margin-bottom: 20px;
   }
   .salutation {
     font-family: 'Caveat', cursive;
@@ -588,7 +595,6 @@
     font-weight: 400;
     line-height: 1.55;
     color: #444;
-    flex: 1;
     white-space: pre-wrap;
     word-break: break-word;
   }
@@ -611,7 +617,7 @@
     .message-card { break-inside: avoid; }
   }
   @media (max-width: 600px) {
-    .grid { grid-template-columns: 1fr; }
+    .grid { column-width: auto; column-count: 1; }
   }
 </style>
 </head>
