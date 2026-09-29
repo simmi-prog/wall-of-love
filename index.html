@@ -525,7 +525,8 @@
   </svg>`;
 
   function buildCompiledHtml(ordered) {
-    const cards = ordered.map(m => `
+    function cardHtml(m) {
+      return `
       <article class="message-card">
         <p class="salutation">Dear Dan,</p>
         <p class="message">${escapeHtml(m.message)}</p>
@@ -533,8 +534,24 @@
           <p class="closing">With appreciation,</p>
           <p class="name">${escapeHtml(m.name)}</p>
         </div>
-      </article>
-    `).join('');
+      </article>`;
+    }
+
+    const leftCol = [];
+    const rightCol = [];
+    let leftWeight = 0;
+    let rightWeight = 0;
+    ordered.forEach((m) => {
+      const html = cardHtml(m);
+      const weight = m.message.length + m.name.length;
+      if (leftWeight <= rightWeight) {
+        leftCol.push(html);
+        leftWeight += weight;
+      } else {
+        rightCol.push(html);
+        rightWeight += weight;
+      }
+    });
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -569,18 +586,30 @@
     color: #888;
   }
   .grid {
-    column-width: 360px;
-    column-gap: 20px;
+    width: 100%;
+    overflow: hidden;
+  }
+  .grid::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+  .col {
+    width: calc(50% - 10px);
+    float: left;
+  }
+  .col + .col {
+    float: right;
   }
   .message-card {
     border: 1.5px solid #c9a84c;
     border-radius: 6px;
     padding: 22px 20px 18px;
     background: #fff;
-    display: inline-block;
     width: 100%;
-    break-inside: avoid;
     margin-bottom: 20px;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   .salutation {
     font-family: 'Caveat', cursive;
@@ -613,11 +642,22 @@
     color: #7b4fa0;
   }
   @media print {
-    body { padding: 24px; background: #fff; }
-    .message-card { break-inside: avoid; }
+    @page { size: A4 portrait; margin: 1.2cm; }
+    body { padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { max-width: none; width: 100%; }
+    .grid { width: 100%; overflow: visible; }
+    .col {
+      width: calc(50% - 8px) !important;
+      float: left !important;
+      display: block !important;
+    }
+    .col + .col { float: right !important; }
+    .message-card { break-inside: avoid; page-break-inside: avoid; }
+    .header { margin-bottom: 24px; }
   }
-  @media (max-width: 600px) {
-    .grid { column-width: auto; column-count: 1; }
+  @media screen and (max-width: 600px) {
+    .col { width: 100%; float: none; }
+    .col + .col { float: none; }
   }
 </style>
 </head>
@@ -628,7 +668,10 @@
       <h1>For Dan</h1>
       <p class="subtitle">A little bouquet of appreciation from your colleagues</p>
     </header>
-    <div class="grid">${cards}</div>
+    <div class="grid">
+      <div class="col">${leftCol.join('')}</div>
+      <div class="col">${rightCol.join('')}</div>
+    </div>
   </div>
 </body>
 </html>`;

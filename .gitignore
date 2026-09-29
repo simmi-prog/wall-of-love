@@ -22,6 +22,14 @@ desktop.ini
 *.log
 npm-debug.log*
 
+# Python
+fonts/
+.cache/
+*.pdf
+__pycache__/
+*.pyc
+.venv/
+
 # Firebase local emulator
 .firebase/
 firebase-debug.log
